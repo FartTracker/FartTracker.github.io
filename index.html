@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="FPM Tracker">
+    <title>FPM Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .current-fpm {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .breakdown {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 15px;
+            flex: 1;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .log-section {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .loud-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .quiet-btn {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        .reset-btn {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            margin-top: 10px;
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: rgba(255,255,255,0.4);
+        }
+
+        .data-view {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            min-height: 200px;
+        }
+
+        .comparison-section {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .comparison-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 200px !important;
+        }
+
+        .axis-data {
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .decimal-view {
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .top-moments {
+            margin-top: 15px;
+        }
+
+        .moment-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .session-info {
+            text-align: center;
+            margin: 10px 0;
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💨 FPM Tracker</h1>
+        
+        <div class="current-fpm" id="currentFPM">0.0000</div>
+        
+        <div class="breakdown">
+            <div class="stat-box">
+                <div class="stat-label">LFPM</div>
+                <div class="stat-value" id="loudFPM">0.0000</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">QFPM</div>
+                <div class="stat-value" id="quietFPM">0.0000</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total</div>
+                <div class="stat-value" id="totalCount">0</div>
+            </div>
+        </div>
+
+        <div class="session-info" id="sessionInfo">Session started: --</div>
+
+        <div class="log-section">
+            <h3 style="margin-bottom: 15px;">Log a Fart</h3>
+            <div class="button-group">
+                <button class="loud-btn" onclick="logFart('loud')">🔊 LOUD</button>
+                <button class="quiet-btn" onclick="logFart('quiet')">🤫 QUIET</button>
+            </div>
+            <button class="reset-btn" onclick="resetSession()">Reset Session</button>
+        </div>
+
+        <div class="view-tabs">
+            <button class="tab active" onclick="switchView('graph')">Graph</button>
+            <button class="tab" onclick="switchView('axis')">Axis</button>
+            <button class="tab" onclick="switchView('decimal')">Decimal</button>
+        </div>
+
+        <div class="data-view" id="dataView">
+            <canvas id="fartChart"></canvas>
+        </div>
+
+        <div class="comparison-section">
+            <h3 style="margin-bottom: 15px;">Memory Comparisons</h3>
+            <div id="comparisons"></div>
+            <div class="top-moments">
+                <h4 style="margin-bottom: 10px;">Top 5 FPM Moments</h4>
+                <div id="topMoments"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentView = 'graph';
+        let sessionStart = Date.now();
+        let farts = [];
+        let chart = null;
+
+        // Load saved data
+        function loadData() {
+            const saved = localStorage.getItem('fpmData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                farts = data.farts || [];
+                sessionStart = data.sessionStart || Date.now();
+            }
+            updateDisplay();
+        }
+
+        // Save data
+        function saveData() {
+            localStorage.setItem('fpmData', JSON.stringify({
+                farts: farts,
+                sessionStart: sessionStart
+            }));
+        }
+
+        // Save session history
+        function saveSessionHistory() {
+            const history = JSON.parse(localStorage.getItem('fpmHistory') || '[]');
+            const sessionMinutes = (Date.now() - sessionStart) / 60000;
+            const totalFarts = farts.length;
+            const loudCount = farts.filter(f => f.type === 'loud').length;
+            const quietCount = farts.filter(f => f.type === 'quiet').length;
+            
+            history.push({
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString(),
+                fpm: totalFarts / sessionMinutes,
+                lfpm: loudCount / sessionMinutes,
+                qfpm: quietCount / sessionMinutes,
+                total: totalFarts,
+                duration: sessionMinutes
+            });
+
+            // Keep last 30 sessions
+            if (history.length > 30) history.shift();
+            localStorage.setItem('fpmHistory', JSON.stringify(history));
+        }
+
+        function logFart(type) {
+            farts.push({
+                type: type,
+                timestamp: Date.now()
+            });
+            saveData();
+            updateDisplay();
+            
+            // Play sound effect
+            const audio = new Audio();
+            audio.volume = 0.3;
+            if (type === 'loud') {
+                // Trumpet sound (using data URI for a simple beep)
+                audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU=';
+            } else {
+                audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU+ltrywnQpBSp+zPLaizsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSF1xe/glUcOE1qy6OyrWBUIQ5zd8sFuJAUuhM/z1YU2Bhxqvu7mnEoODlOq5O+zYBoGPJPY88p2KwUme8rx3I4+CRZiturqpVITC0mi4PG8aB8GM4vS88qAMAYfcsLu45ZFDBFYr+ftrVoXCECY3PLEcSYELIHO8diJOQcZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2RQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGQU=';
+            }
+            audio.play().catch(() => {});
+        }
+
+        function resetSession() {
+            if (confirm('Reset current session? This will save it to history.')) {
+                saveSessionHistory();
+                farts = [];
+                sessionStart = Date.now();
+                saveData();
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            const sessionMinutes = (Date.now() - sessionStart) / 60000;
+            const totalFarts = farts.length;
+            const loudCount = farts.filter(f => f.type === 'loud').length;
+            const quietCount = farts.filter(f => f.type === 'quiet').length;
+
+            const fpm = totalFarts / sessionMinutes;
+            const lfpm = loudCount / sessionMinutes;
+            const qfpm = quietCount / sessionMinutes;
+
+            document.getElementById('currentFPM').textContent = fpm.toFixed(4);
+            document.getElementById('loudFPM').textContent = lfpm.toFixed(4);
+            document.getElementById('quietFPM').textContent = qfpm.toFixed(4);
+            document.getElementById('totalCount').textContent = totalFarts;
+            document.getElementById('sessionInfo').textContent = 
+                `Session started: ${new Date(sessionStart).toLocaleString()}`;
+
+            updateView();
+            updateComparisons();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            updateView();
+        }
+
+        function updateView() {
+            const container = document.getElementById('dataView');
+            
+            if (currentView === 'graph') {
+                container.innerHTML = '<canvas id="fartChart"></canvas>';
+                drawChart();
+            } else if (currentView === 'axis') {
+                const sessionMinutes = (Date.now() - sessionStart) / 60000;
+                const totalFarts = farts.length;
+                const loudCount = farts.filter(f => f.type === 'loud').length;
+                const quietCount = farts.filter(f => f.type === 'quiet').length;
+                
+                container.innerHTML = `
+                    <div class="axis-data">
+                        <div style="margin: 10px 0;">Time (minutes): ${sessionMinutes.toFixed(2)}</div>
+                        <div style="margin: 10px 0;">Total Farts: ${totalFarts}</div>
+                        <div style="margin: 10px 0;">Loud Farts: ${loudCount}</div>
+                        <div style="margin: 10px 0;">Quiet Farts: ${quietCount}</div>
+                        <div style="margin: 10px 0;">FPM: ${(totalFarts/sessionMinutes).toFixed(4)}</div>
+                        <div style="margin: 10px 0;">LFPM: ${(loudCount/sessionMinutes).toFixed(4)}</div>
+                        <div style="margin: 10px 0;">QFPM: ${(quietCount/sessionMinutes).toFixed(4)}</div>
+                    </div>
+                `;
+            } else {
+                const sessionMinutes = (Date.now() - sessionStart) / 60000;
+                const totalFarts = farts.length;
+                const loudCount = farts.filter(f => f.type === 'loud').length;
+                const quietCount = farts.filter(f => f.type === 'quiet').length;
+                
+                container.innerHTML = `
+                    <div class="decimal-view">
+                        <h3>Precise Metrics</h3>
+                        <div style="margin: 20px 0; font-size: 1.5em;">${(totalFarts/sessionMinutes).toFixed(10)} FPM</div>
+                        <div style="margin: 10px 0;">${(loudCount/sessionMinutes).toFixed(10)} LFPM</div>
+                        <div style="margin: 10px 0;">${(quietCount/sessionMinutes).toFixed(10)} QFPM</div>
+                        <div style="margin: 20px 0; font-size: 0.9em; opacity: 0.8;">
+                            ${totalFarts} total farts over ${sessionMinutes.toFixed(2)} minutes
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function drawChart() {
+            const canvas = document.getElementById('fartChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 200;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (farts.length === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data yet - log some farts!', canvas.width/2, canvas.height/2);
+                return;
+            }
+
+            // Group farts by 5-minute intervals
+            const intervals = {};
+            farts.forEach(fart => {
+                const minutesSinceStart = (fart.timestamp - sessionStart) / 60000;
+                const interval = Math.floor(minutesSinceStart / 5) * 5;
+                if (!intervals[interval]) {
+                    intervals[interval] = { loud: 0, quiet: 0 };
+                }
+                intervals[interval][fart.type]++;
+            });
+
+            const points = Object.keys(intervals).sort((a,b) => a-b);
+            if (points.length === 0) return;
+
+            const maxFarts = Math.max(...points.map(p => intervals[p].loud + intervals[p].quiet));
+            const padding = 40;
+            const graphWidth = canvas.width - padding * 2;
+            const graphHeight = canvas.height - padding * 2;
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // Draw lines
+            const drawLine = (type, color) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                points.forEach((interval, i) => {
+                    const x = padding + (i / (points.length - 1 || 1)) * graphWidth;
+                    const y = canvas.height - padding - (intervals[interval][type] / maxFarts) * graphHeight;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                
+                ctx.stroke();
+            };
+
+            drawLine('loud', '#ff6b6b');
+            drawLine('quiet', '#4ecdc4');
+
+            // Legend
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(padding, 10, 15, 15);
+            ctx.fillStyle = 'white';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Loud', padding + 20, 22);
+
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillRect(padding + 80, 10, 15, 15);
+            ctx.fillStyle = 'white';
+            ctx.fillText('Quiet', padding + 100, 22);
+        }
+
+        function updateComparisons() {
+            const history = JSON.parse(localStorage.getItem('fpmHistory') || '[]');
+            const container = document.getElementById('comparisons');
+            
+            if (history.length === 0) {
+                container.innerHTML = '<div style="opacity: 0.7;">No previous sessions yet</div>';
+            } else {
+                const sessionMinutes = (Date.now() - sessionStart) / 60000;
+                const currentFPM = farts.length / sessionMinutes;
+                const lastSession = history[history.length - 1];
+                
+                const weekAgo = history.filter(h => {
+                    const date = new Date(h.date + ' ' + h.time);
+                    return Date.now() - date.getTime() < 7 * 24 * 60 * 60 * 1000;
+                });
+                
+                const avgWeekFPM = weekAgo.reduce((sum, h) => sum + h.fpm, 0) / (weekAgo.length || 1);
+                
+                container.innerHTML = `
+                    <div class="comparison-item">
+                        <div>Last Session</div>
+                        <div>${lastSession.fpm.toFixed(4)} FPM</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div>Current vs Last</div>
+                        <div>${currentFPM > lastSession.fpm ? '📈' : '📉'} ${((currentFPM - lastSession.fpm) / lastSession.fpm * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div>Week Average</div>
+                        <div>${avgWeekFPM.toFixed(4)} FPM</div>
+                    </div>
+                `;
+            }
+
+            // Top moments
+            const topContainer = document.getElementById('topMoments');
+            const sorted = [...history].sort((a, b) => b.fpm - a.fpm).slice(0, 5);
+            
+            if (sorted.length === 0) {
+                topContainer.innerHTML = '<div style="opacity: 0.7;">No moments yet</div>';
+            } else {
+                topContainer.innerHTML = sorted.map((h, i) => `
+                    <div class="moment-item">
+                        <div>#${i + 1} - ${h.date}</div>
+                        <div>${h.fpm.toFixed(4)} FPM</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initialize
+        loadData();
+        setInterval(updateDisplay, 5000); // Update every 5 seconds
+    </script>
+</body>
+</html>
